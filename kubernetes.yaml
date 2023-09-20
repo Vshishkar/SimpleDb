@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-deployment
+spec:
+  selector:
+    matchLabels:
+      app: node-pod
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: node-pod
+    spec:
+      containers:
+        - name: node-container
+          image: distributedkeyvaluestorenode:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:80
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+    name: node-service
+spec:
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+        app: node-pod
+    type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: node-ingress
+spec:
+    rules:
+    - http:
+        paths:
+        - path: /node
+          pathType: Prefix
+          backend:
+            service:
+              name: node-service
+              port:
+                number: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-deployment
+spec:
+  selector:
+    matchLabels:
+      app: gateway-pod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: gateway-pod
+    spec:
+      containers:
+        - name: gateway-container
+          image: distributedkeyvaluestoreapigateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          env:
+            - name: ASPNETCORE_URLS
+              value: http://+:80
+--- 
+apiVersion: v1
+kind: Service
+metadata:
+    name: gateway-service
+spec:
+    ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+    selector:
+        app: gateway-pod
+    type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: gateway-ingress
+spec:
+    rules:
+    - http:
+        paths:
+        - path: /gateway
+          pathType: Prefix
+          backend:
+            service:
+              name: gateway-service
+              port:
+                number: 80             

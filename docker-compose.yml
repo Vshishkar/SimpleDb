@@ -1,0 +1,38 @@
+version: '3.4'
+
+services:
+  servicediscovery:
+    image: hashicorp/consul
+    restart: always
+    networks:
+      - backend
+    ports:
+      - "8500:8500"
+      - "8600:8600/tcp"
+      - "8600:8600/udp"
+    command: "agent -bootstrap-expect=1 -server -ui -node=server-1 -client=0.0.0.0"
+
+  reverseproxy:
+    image: reverseproxy
+    build:
+      context: .
+      dockerfile: src/reverseProxy/Dockerfile
+    ports:
+        - 8080:8080
+        - 8081:8081
+    restart: always
+    networks:
+      - backend
+
+  node:
+    image: node
+    deploy:
+      replicas: 6
+    build:
+      context: .
+      dockerfile: src/DistributedKeyValueStore.Node/Dockerfile
+    networks:
+      - backend
+networks:
+  backend:
+      
